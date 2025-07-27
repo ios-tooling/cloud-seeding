@@ -14,7 +14,7 @@ import CloudKit
 	public var isAvailable = false
 	
 	var tokens: [NSObjectProtocol] = []
-	var container: CKContainer!
+	public var container: CKContainer!
 	
 	init() {
 	}
