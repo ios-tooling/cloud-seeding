@@ -11,23 +11,22 @@ import CloudKit
 public enum CKRecordConflictHandlerResult: Sendable { case ignore, replace(CKRecord) }
 
 public extension CKDatabase {
-	func save(record: CKRecord) async throws {
+	func save(record: CKRecord) async throws -> CKRecord {
 		try await save(record: record) { _, _ in .ignore}
 	}
 
-	func save(record: CKRecord, conflicts: @escaping (CKRecord, Error) async -> CKRecordConflictHandlerResult) async throws {
-		let op = SaveRecordsOperation(recordsToSave: [record])
+	func save(record: CKRecord, conflicts: @escaping (CKRecord, Error) async -> CKRecordConflictHandlerResult) async throws -> CKRecord {
+		let op = SaveRecordOperation(record: record)
 		do {
-			try await op.save(to: self)
+			return try await op.save(to: self)
 		} catch let error as CKError {
 			switch error.code {
 			case .serverRecordChanged:
 				if let serverRecord = error.userInfo[CKRecordChangedErrorServerRecordKey] as? CKRecord {
 					switch await conflicts(serverRecord, error) {
-					case .ignore: break
-					case .replace(let newRecord): try await save(record: newRecord)
+					case .ignore: return serverRecord
+					case .replace(let newRecord): return try await save(record: newRecord)
 					}
-					return
 				}
 				
 			default: break
