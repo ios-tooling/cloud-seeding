@@ -8,7 +8,7 @@
 import Foundation
 import CloudKit
 
-@MainActor public class CloudKitInterface {
+@MainActor @Observable public class CloudKitInterface {
 	public static let instance = CloudKitInterface()
 	
 	public var isAvailable = false
@@ -25,6 +25,7 @@ import CloudKit
 		})
 		
 		container = containerID == nil ? CKContainer.default() : CKContainer(identifier: containerID!)
+		Task { await checkAccountStatus() }
 	}
 	
 	func checkAccountStatus() async {
