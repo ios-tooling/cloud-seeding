@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  SaveRecordsOperation.swift
 //  CloudSeeding
 //
 //  Created by Ben Gottlieb on 7/26/25.
@@ -8,10 +8,13 @@
 import Foundation
 import CloudKit
 
-extension CKModifyRecordsOperation {
+class SaveRecordsOperation: CKModifyRecordsOperation, @unchecked Sendable {
+	var errors: [Error] = []
+	
 	func save(to database: CKDatabase) async throws {
-		return try await withUnsafeThrowingContinuation { continuation in
-			self.modifyRecordsResultBlock = { result in
+		
+		let _: Void = try await withUnsafeThrowingContinuation { continuation in
+			self.perRecordSaveBlock = { record, result in
 				switch result {
 				case .success:
 					continuation.resume()
