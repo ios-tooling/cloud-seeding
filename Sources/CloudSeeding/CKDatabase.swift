@@ -60,7 +60,7 @@ public extension CKDatabase {
 					}
 				}
 				
-				guard let next = results.queryCursor, allResults.count < limit else { break }
+				guard let next = results.queryCursor, (limit == 0 || allResults.count < limit) else { break }
 				cursor = next
 			}
 			return allResults
