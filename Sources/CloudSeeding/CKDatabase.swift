@@ -37,6 +37,19 @@ public extension CKDatabase {
 		}
 	}
 	
+	func fetchRecord(ofType type: String, matching predicate: NSPredicate, inZone: CKRecordZone.ID? = nil) async throws -> CKRecord {
+		if await !CloudKitInterface.instance.isAvailable { throw CloudSeedingError.notAvailable }
+		let query = CKQuery(recordType: type, predicate: predicate)
+		let results = try await self.records(matching: query, inZoneWith: inZone, desiredKeys: nil, resultsLimit: 1).matchResults
+		
+		guard let found = results.first else { throw CloudSeedingError.recordNotFound }
+		
+		switch found.1 {
+		case .success(let record): return record
+		case .failure(let error): throw error
+		}
+	}
+	
 	func fetchRecords(ofType type: CKRecord.RecordType, matching predicate: NSPredicate = .init(value: true), inZone: CKRecordZone.ID? = nil, keys: [CKRecord.FieldKey]? = nil, limit: Int = CKQueryOperation.maximumResults) async throws -> [CKRecord] {
 		if await !CloudKitInterface.instance.isAvailable { throw CloudSeedingError.notAvailable }
 		let query = CKQuery(recordType: type, predicate: predicate)

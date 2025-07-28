@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum CloudSeedingError: Error { case notAvailable }
+enum CloudSeedingError: Error { case notAvailable, recordNotFound }
 
 struct MultipleError: Error {
 	var errors: [any Error]
