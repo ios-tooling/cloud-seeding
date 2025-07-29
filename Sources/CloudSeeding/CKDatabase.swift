@@ -37,7 +37,17 @@ public extension CKDatabase {
 		}
 	}
 	
-	func record(ofType type: String, matching predicate: NSPredicate, inZone: CKRecordZone.ID? = nil) async throws -> CKRecord {
+	func fetchRecords(withIDs ids: [CKRecord.ID]) async throws -> [CKRecord] {
+		let all = try await records(for: ids)
+		return all.values.compactMap { value in
+			switch value {
+			case .success(let record): record
+			case .failure: nil
+			}
+		}
+	}
+	
+	func fetchRecord(ofType type: String, matching predicate: NSPredicate, inZone: CKRecordZone.ID? = nil) async throws -> CKRecord {
 		if await !CloudKitInterface.instance.isAvailable { throw CloudSeedingError.notAvailable }
 		let query = CKQuery(recordType: type, predicate: predicate)
 		let results = try await self.records(matching: query, inZoneWith: inZone, desiredKeys: nil, resultsLimit: 1).matchResults
@@ -50,9 +60,10 @@ public extension CKDatabase {
 		}
 	}
 	
-	func fetchRecords(ofType type: CKRecord.RecordType, matching predicate: NSPredicate = .init(value: true), inZone: CKRecordZone.ID? = nil, keys: [CKRecord.FieldKey]? = nil, limit: Int = CKQueryOperation.maximumResults) async throws -> [CKRecord] {
+	func fetchRecords(ofType type: CKRecord.RecordType, matching predicate: NSPredicate = .init(value: true), sortedBy: [NSSortDescriptor]? = nil, inZone: CKRecordZone.ID? = nil, keys: [CKRecord.FieldKey]? = nil, limit: Int = CKQueryOperation.maximumResults) async throws -> [CKRecord] {
 		if await !CloudKitInterface.instance.isAvailable { throw CloudSeedingError.notAvailable }
 		let query = CKQuery(recordType: type, predicate: predicate)
+		query.sortDescriptors = sortedBy
 		do {
 			var allResults: [CKRecord] = []
 			var cursor: CKQueryOperation.Cursor?
