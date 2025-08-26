@@ -49,6 +49,10 @@ extension CKRecordField where DataType == Date {
 	public static func date(_ name: String) -> Self { .init(name: name, dataType: Date.self) }
 }
 
+extension CKRecordField where DataType == URL {
+	public static func url(_ name: String) -> Self { .init(name: name, dataType: URL.self) }
+}
+
 extension CKRecordField where DataType == Data {
 	public static func data(_ name: String) -> Self { .init(name: name, dataType: Data.self) }
 }
@@ -60,6 +64,11 @@ extension CKRecordField where DataType: Codable {
 }
 
 extension CKRecord {
+	public subscript(field: CKRecordField<CKAsset>) -> URL? {
+		get { (self[field.name] as? CKAsset)?.fileURL }
+		set { self[field.name] = newValue != nil ? CKAsset(fileURL: newValue!) : nil }
+	}
+	
 	public subscript<Result>(field: CKRecordField<Result>) -> Result? {
 		get { self[field.name] as? Result }
 		set { self[field.name] = newValue as? CKRecordValue }
