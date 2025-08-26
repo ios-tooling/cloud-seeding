@@ -82,16 +82,16 @@ extension CKRecord {
 				if !FileManager.default.fileExists(at: localURL), FileManager.default.fileExists(at: url) {
 					try? FileManager.default.moveItem(at: url, to: localURL)
 				}
-				return localURL.homeRelativeURL
+				return localURL.removingHomeDirectory
 			}
 			return nil
 		}
 		set {
-			if let newValue {
-				let fullURL = URL(withPathRelativeToHome: newValue.path(percentEncoded: false))
+			if let newValue, let fullURL = newValue.addingHomeDirectory {
 				self[field.name] = CKAsset(fileURL: fullURL)
 			} else {
-				self[field.name] = nil }
+				self[field.name] = nil
+			}
 		}
 	}
 	
