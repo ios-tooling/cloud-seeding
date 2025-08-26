@@ -7,6 +7,7 @@
 
 import Suite
 import CloudKit
+import UniformTypeIdentifiers
 
 public struct CKRecordField<DataType>: Sendable {
 	public let name: String
@@ -63,10 +64,35 @@ extension CKRecordField where DataType: Codable {
 	}
 }
 
+extension CKAsset {
+	public static let ckRecordAttachmentsDirectory = URL.document(named: "cloudkit-assets")
+	
+	func localAssetURL(for type: UTType) -> URL? {
+		guard let partial = fileURL?.lastPathComponent else { return nil }
+		let full = Self.ckRecordAttachmentsDirectory.appendingPathComponent(partial, conformingTo: type)
+		try? FileManager.default.createDirectory(at: Self.ckRecordAttachmentsDirectory, withIntermediateDirectories: true)
+		return full
+	}
+}
+
 extension CKRecord {
-	public subscript(field: CKRecordField<CKAsset>) -> URL? {
-		get { (self[field.name] as? CKAsset)?.fileURL }
-		set { self[field.name] = newValue != nil ? CKAsset(fileURL: newValue!) : nil }
+	public subscript(field: CKRecordField<URL>, type: UTType) -> URL? {
+		get {
+			if let asset = self[field.name] as? CKAsset, let url = asset.fileURL, let localURL = asset.localAssetURL(for: type) {
+				if !FileManager.default.fileExists(at: localURL), FileManager.default.fileExists(at: url) {
+					try? FileManager.default.moveItem(at: url, to: localURL)
+				}
+				return localURL.homeRelativeURL
+			}
+			return nil
+		}
+		set {
+			if let newValue {
+				let fullURL = URL(withPathRelativeToHome: newValue.path(percentEncoded: false))
+				self[field.name] = CKAsset(fileURL: fullURL)
+			} else {
+				self[field.name] = nil }
+		}
 	}
 	
 	public subscript<Result>(field: CKRecordField<Result>) -> Result? {
