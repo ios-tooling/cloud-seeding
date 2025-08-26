@@ -54,6 +54,10 @@ extension CKRecordField where DataType == URL {
 	public static func url(_ name: String) -> Self { .init(name: name, dataType: URL.self) }
 }
 
+extension CKRecordField where DataType == [URL] {
+	public static func urls(_ name: String) -> Self { .init(name: name, dataType: [URL].self) }
+}
+
 extension CKRecordField where DataType == Data {
 	public static func data(_ name: String) -> Self { .init(name: name, dataType: Data.self) }
 }
@@ -68,31 +72,27 @@ extension CKAsset {
 	public static let ckRecordAttachmentsDirectory = URL.document(named: "cloudkit-assets")
 	
 	func localAssetURL(for type: UTType) -> URL? {
-		guard let partial = fileURL?.lastPathComponent else { return nil }
+		guard let fileURL else { return nil }
+		let partial = fileURL.lastPathComponent
 		let full = Self.ckRecordAttachmentsDirectory.appendingPathComponent(partial, conformingTo: type)
 		try? FileManager.default.createDirectory(at: Self.ckRecordAttachmentsDirectory, withIntermediateDirectories: true)
+
+		if !FileManager.default.fileExists(at: full), FileManager.default.fileExists(at: fileURL) {
+			try? FileManager.default.moveItem(at: fileURL, to: full)
+		}
 		return full
 	}
 }
 
 extension CKRecord {
 	public subscript(field: CKRecordField<URL>, type: UTType) -> URL? {
-		get {
-			if let asset = self[field.name] as? CKAsset, let url = asset.fileURL, let localURL = asset.localAssetURL(for: type) {
-				if !FileManager.default.fileExists(at: localURL), FileManager.default.fileExists(at: url) {
-					try? FileManager.default.moveItem(at: url, to: localURL)
-				}
-				return localURL.removingHomeDirectory
-			}
-			return nil
-		}
-		set {
-			if let newValue, let fullURL = newValue.addingHomeDirectory {
-				self[field.name] = CKAsset(fileURL: fullURL)
-			} else {
-				self[field.name] = nil
-			}
-		}
+		get { (self[field.name] as? CKAsset)?.localAssetURL(for: type)?.removingHomeDirectory }
+		set { self[field.name] = newValue == nil ? nil : CKAsset(fileURL: newValue!.addingHomeDirectory) }
+	}
+	
+	public subscript(field: CKRecordField<[URL]>, type: UTType) -> [URL]? {
+		get { (self[field.name] as? [CKAsset])?.compactMap { $0.localAssetURL(for: type)?.removingHomeDirectory } }
+		set { self[field.name] = newValue?.map { CKAsset(fileURL: $0.addingHomeDirectory) }}
 	}
 	
 	public subscript<Result>(field: CKRecordField<Result>) -> Result? {
