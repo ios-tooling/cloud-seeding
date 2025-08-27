@@ -86,8 +86,22 @@ extension CKAsset {
 
 extension CKRecord {
 	public subscript(field: CKRecordField<URL>, type: UTType) -> URL? {
-		get { (self[field.name] as? CKAsset)?.localAssetURL(for: type)?.removingHomeDirectory }
-		set { self[field.name] = newValue == nil ? nil : CKAsset(fileURL: newValue!.addingHomeDirectory) }
+		get {
+			if let url = self[field.name] as? URL { return url }
+			return (self[field.name] as? CKAsset)?.localAssetURL(for: type)?.removingHomeDirectory
+		}
+		set {
+			guard let url = newValue else {
+				self[field.name] = nil
+				return
+			}
+			
+			if url.isFileURL {
+				self[field.name] = CKAsset(fileURL: url.addingHomeDirectory)
+			} else {
+				self[field.name] = url as? CKRecordValue
+			}
+		}
 	}
 	
 	public subscript(field: CKRecordField<[URL]>, type: UTType) -> [URL]? {
