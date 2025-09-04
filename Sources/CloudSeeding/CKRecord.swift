@@ -11,6 +11,6 @@ import CloudKit
 public extension CKRecord {
 	var createdByRecordID: String? {
 		let name = self.creatorUserRecordID?.recordName
-		return name == CKCurrentUserDefaultName ? CloudKitInterface.currentUserID?.recordName : name
+		return name == CKCurrentUserDefaultName ? CloudKitInterface.currentUserID : name
 	}
 }

@@ -62,6 +62,10 @@ extension CKRecordField where DataType == Data {
 	public static func data(_ name: String) -> Self { .init(name: name, dataType: Data.self) }
 }
 
+extension CKRecordField where DataType == [Data] {
+	public static func dataArray(_ name: String) -> Self { .init(name: name, dataType: [Data].self) }
+}
+
 extension CKRecordField where DataType: Codable {
 	public static func codable(_ name: String, _ type: DataType.Type) -> Self {
 		.init(name: name, dataType: DataType.self)

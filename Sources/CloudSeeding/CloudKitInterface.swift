@@ -12,10 +12,14 @@ import Combine
 @MainActor @Observable public class CloudKitInterface {
 	public static let instance = CloudKitInterface()
 	
-	public private(set) var isAvailable = false
-	nonisolated static public var currentUserID: CKRecord.ID? { currentUserIDValue.value }
-	nonisolated static let currentUserIDValue = CurrentValueSubject<CKRecord.ID?, Never>(nil)
+	public enum Status: Sendable { case notAvailable, available, signedIn }
 	
+	public private(set) var status = Status.notAvailable
+	nonisolated static public var currentUserID: String? { currentUserIDValue.value }
+	nonisolated static public var currentUserName: String? { currentUserNameValue.value }
+	nonisolated static let currentUserIDValue = CurrentValueSubject<String?, Never>(nil)
+	nonisolated static let currentUserNameValue = CurrentValueSubject<String?, Never>(nil)
+
 	var tokens: [NSObjectProtocol] = []
 	var containerID: String?
 	public var container: CKContainer!
@@ -34,31 +38,43 @@ import Combine
 	
 	func checkAccountStatus() async {
 		do {
-			let status = try await container.accountStatus()
+			let accountStatus = try await container.accountStatus()
 			
-			switch status {
+			switch accountStatus {
 				
 			case .couldNotDetermine:
-				isAvailable = false
+				status = .notAvailable
 			case .available:
-				isAvailable = true
+				status = .signedIn
 			case .restricted:
-				isAvailable = true
+				status = .signedIn
 			case .noAccount:
-				isAvailable = false
+				status = .available
 			case .temporarilyUnavailable:
-				isAvailable = false
+				status = .notAvailable
 			@unknown default:
 				break
 			}
-
-			if isAvailable {
-				Self.currentUserIDValue.value = try await container.userRecordID()
-				print("Signed in as: \(Self.currentUserID?.recordName ?? "??")")
+			
+			if status != .notAvailable {
+				let recordID = try await container.userRecordID()
+				Self.currentUserIDValue.value = recordID.recordName
+				
+				let participant = try await container.shareParticipant(forUserRecordID: recordID)
+				if let name = participant.userIdentity.nameComponents?.fullName {
+					Self.currentUserNameValue.value = name
+				}
 			}
 		} catch {
 			print("Failed to check CloudKit account status: \(error)")
 		}
 	}
+}
 
+extension PersonNameComponents {
+	var fullName: String? {
+		guard let givenName, let familyName, !givenName.isEmpty || !familyName.isEmpty else { return nil }
+		
+		return [givenName, familyName].compactMap { $0 }.joined(separator: " ")
+	}
 }
