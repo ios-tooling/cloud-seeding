@@ -89,7 +89,7 @@ public extension CKDatabase {
 			}
 			return allResults
 		} catch {
-			
+			print("Failed to fetch \(type): \(error)")
 		}
 		
 		return []
