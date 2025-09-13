@@ -36,7 +36,7 @@ import Combine
 		Task { await checkAccountStatus() }
 	}
 	
-	func checkAccountStatus() async {
+	public func checkAccountStatus() async {
 		do {
 			let accountStatus = try await container.accountStatus()
 			
