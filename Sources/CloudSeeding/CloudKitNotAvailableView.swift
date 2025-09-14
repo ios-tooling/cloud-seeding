@@ -47,10 +47,12 @@ public struct CloudKitNotAvailableView: View {
 					.foregroundColor(.white)
 					.padding()
 				
-				Button("Open Settings") {
-					UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
-				}
-				.safeGlassButton(prominent: false)
+				#if os(iOS)
+					Button("Open Settings") {
+						UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
+					}
+					.safeGlassButton(prominent: false)
+				#endif
 			}
 		}
 	}
