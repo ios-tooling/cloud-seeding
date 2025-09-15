@@ -16,18 +16,18 @@ public protocol PersistedCKRecord: CKRecordBased & PersistentModel, PresavablePe
 	var changeRecordedAt: Date? { get set }
 	var syncEngineID: String { get set }
 	init()
-	func resolveConflict(with cloudRecord: CKRecord, newer: NewerRecord)
-	func load(fromCloud record: CKRecord) -> Bool
+	func resolveConflict(with cloudRecord: CKRecord, newer: NewerRecord, context: ModelContext)
+	func load(fromCloud record: CKRecord, context: ModelContext) -> Bool
 	func presave()
 	func removeFromContext()
 }
 
 public extension PersistedCKRecord {
-	init?(record: CKRecord) {
+	init?(record: CKRecord, context: ModelContext) {
 		self.init()
 		syncEngineID = record.recordID.recordName
 		self.modifiedAt = record[.modifiedAt] ?? record.modificationDate ?? .now
-		if !load(fromCloud: record) { return nil }
+		if !load(fromCloud: record, context: context) { return nil }
 	}
 
 	func newerRecord(than cloudRecord: CKRecord) -> NewerRecord {
