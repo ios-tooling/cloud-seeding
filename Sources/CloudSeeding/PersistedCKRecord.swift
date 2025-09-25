@@ -25,8 +25,13 @@ public protocol PersistedCKRecord: CKRecordBased & PersistentModel, PresavablePe
 public extension PersistedCKRecord {
 	init?(record: CKRecord, context: ModelContext) {
 		self.init()
+		changeRecordedAt = nil
 		syncEngineID = record.recordID.recordName
-		self.modifiedAt = record[.modifiedAt] ?? record.modificationDate ?? .now
+		if let mod = record[.modifiedAt] {
+			self.modifiedAt = mod
+		} else {
+			self.modifiedAt = record.modificationDate ?? .now
+		}
 		if !load(fromCloud: record, context: context) { return nil }
 	}
 
